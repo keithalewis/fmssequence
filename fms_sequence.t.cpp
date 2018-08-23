@@ -331,7 +331,7 @@ void test_binop()
         double x = 1;
         auto s = epsilon(power(x) / factorial<>());
         assert (19 == length(s));
-        assert(sum(s) - exp(x) == 2 * std::numeric_limits<double>::epsilon());
+        assert(exp(x) - sum(s) == -2 * std::numeric_limits<double>::epsilon());
         assert(exp(x) == sequence::horner(epsilon(constant<double>(1) / factorial<>()), x));
     }
 }

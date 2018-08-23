@@ -1,4 +1,4 @@
-// fms_sequence.h - sequences
+// fms_sequence.h - forward iterators that can be dereferenced when operator bool() const is true
 #pragma once
 #include <array>
 #include <functional>
@@ -95,7 +95,7 @@ namespace fms::sequence {
         return take(N, pointer<T>(&t[0]));
     }
 
-    template <class T>
+    template <class T = double>
     class constant {
         T t;
 
@@ -128,7 +128,7 @@ namespace fms::sequence {
     };
 
     // epsilon terminated array
-    template <class S>
+    template <class S = double>
     class epsilon {
         S s;
 
@@ -196,6 +196,7 @@ namespace fms::sequence {
         }
     };
 
+    // t0, op(t0, dt), op(op(t0, dt), dt), ...
     template <class T, class Op = std::plus<T>>
     class generate {
         T t0, dt;
@@ -257,7 +258,10 @@ namespace fms::sequence {
 
             return *this;
         }
-        value_type operator*() const { return *t; }
+        value_type operator*() const 
+        {
+            return *t;
+        }
     };
 
     // 1 = t^0, t = t^1, t^2, ...
@@ -355,9 +359,15 @@ namespace fms::sequence {
         return binop(std::divides<std::common_type_t<typename S0::value_type, typename S1::value_type>>{}, s0, s1);
     }
 
+    // s[0] + x*(s[1] + x*(...))
+    template<class S>
+    inline typename S::value_type horner(S s, typename S::value_type x)
+    {
+        return !s ? 0 : *s + x * horner(++s, x);
+    }
+
     template <class S>
-    inline S
-        last(S s)
+    inline S last(S s)
     {
         S s_ = s;
 
@@ -368,15 +378,13 @@ namespace fms::sequence {
         return s_;
     }
     template <class S>
-    inline auto
-        back(S s)
+    inline auto back(S s)
     {
         return *last(s);
     }
 
     template <class S>
-    inline S
-        drop(size_t n, S s)
+    inline S drop(size_t n, S s)
     {
         while (s && n--)
             ++s;
@@ -385,8 +393,7 @@ namespace fms::sequence {
     }
 
     template <class S>
-    inline size_t
-        length(S s)
+    inline size_t length(S s)
     {
         size_t n = 0;
 
@@ -413,8 +420,7 @@ namespace fms::sequence {
     }
 
     template <class S>
-    inline typename S::value_type
-        sum(S s)
+    inline typename S::value_type sum(S s)
     {
         if (!s)
             return 0;
@@ -429,8 +435,7 @@ namespace fms::sequence {
     }
 
     template <class S>
-    inline typename S::value_type
-        product(S s)
+    inline typename S::value_type product(S s)
     {
         if (!s)
             return 1;

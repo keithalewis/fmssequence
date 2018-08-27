@@ -116,6 +116,28 @@ void test_constant()
     assert(*five == 5);
 }
 
+void test_drop()
+{
+    int t[] = { 1,2,3 };
+    auto s = sequence::array(t);
+
+    {
+        assert(3 == length(s));
+        assert(2 == length(drop(1, s)));
+        auto s1 = drop(1, s);
+        assert(s1);
+        assert(*s1 == 2);
+        ++s1;
+        assert(s1);
+        assert(*s1 == 3);
+        ++s1;
+        assert(!s1);
+        ++s1;
+        assert(!s1);
+        assert(0 == length(drop(10, s)));
+    }
+}
+
 void test_iota()
 {
     {
@@ -198,6 +220,11 @@ void test_length()
     }
     {
         assert(53 == length(sequence::epsilon(sequence::geometric<double>(1., .5))));
+    }
+    {
+        int t[] = { 1,2,3 };
+        assert(3 == length(sequence::array(t)));
+        assert(2 == length(sequence::take(2, sequence::pointer(t))));
     }
 }
 
@@ -383,6 +410,7 @@ int main()
 
     test_iota();
 
+    test_drop();
     test_length();
     test_sum();
     test_product();

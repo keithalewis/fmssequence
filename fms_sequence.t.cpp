@@ -1,9 +1,22 @@
 // fms_sequence.t.cpp - test sequences
 #include <cassert>
 #include <cmath>
+#include <chrono>
 #include "fms_sequence.h"
 
 using namespace fms;
+
+inline auto time(const std::function<void(void)>& f, size_t n = 1)
+{
+    std::chrono::time_point<std::chrono::steady_clock> tp;
+
+    tp = std::chrono::high_resolution_clock::now();
+    while (n--)
+        f();
+    std::chrono::duration<float> duration = std::chrono::high_resolution_clock::now() - tp;
+
+    return duration;
+}
 
 template<class T>
 void test_array()
@@ -251,6 +264,10 @@ void test_binop()
         auto s0 = sequence::array(t0);
         auto s1 = sequence::array(t1);
         auto s = s0 + s1;
+        decltype(s) s2{ s };
+        assert(s2 == s);
+        assert(!(s2 != s));
+        s = s2;
         assert(s);
         assert(*s == *s0 + *s1);
         ++s;
@@ -332,7 +349,17 @@ void test_binop()
         auto s = epsilon(power(x) / factorial<>());
         assert (19 == length(s));
         assert(exp(x) - sum(s) == -2 * std::numeric_limits<double>::epsilon());
-        assert(exp(x) == sequence::horner(epsilon(constant<double>(1) / factorial<>()), x));
+        assert(exp(x) == sequence::horner(epsilon(constant(1) / factorial<>()), x));
+
+        auto duration = time([s]() { return sum(s); }, 10000);
+        duration = duration;
+        duration = time([x]() { return sequence::horner(epsilon(constant(1) / factorial<>()), x); }, 10000);
+        duration = duration;
+        auto h = epsilon(constant(1) / factorial<>());
+        duration = time([h,x]() { return sequence::horner(h, x); }, 10000);
+        duration = duration; 
+        duration = time([x]() { return exp(x); }, 10000);
+        duration = duration;
     }
 }
 

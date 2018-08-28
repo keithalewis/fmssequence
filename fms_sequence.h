@@ -336,6 +336,122 @@ namespace fms::sequence {
         }
     };
     
+    template<class ...S>
+    class concatenate {
+        std::tuple<S...> s;
+        size_t i; // active index
+    public:
+        typedef std::common_type_t<typename S::value_type...> value_type;
+        concatenate(S ...ss) noexcept
+            : s(ss...)
+        { }
+        bool operator==(const concatenate& s) const
+        {
+            return  this->s == s.s;
+        }
+        bool operator!=(const concatenate& s) const
+        {
+            return !operator==(s);
+        }
+        operator bool() const
+        {
+            return i != std::tuple_size_v<std::tuple<S...>>;
+        }
+        concatenate& operator++()
+        {
+            /*
+            if (*this) {
+                auto& si = get(i);
+                if (si) {
+                    ++si;
+                }
+                else {
+                    ++i;
+                }
+            }*/
+
+            return *this;
+        }
+        value_type operator*() const
+        {
+            return *get(i);
+        }
+    private:
+        auto get(size_t i)
+        {
+            switch (i) {
+            case 0:
+                return std::get<0>(s);
+                break;
+  /*          case 1:
+                return std::get<1>(s);
+                break;
+            case 2:
+                return std::get<2>(s);
+                break;
+            case 3:
+                return std::get<3>(s);
+                break;
+            case 4:
+                return std::get<4>(s);
+                break;
+            case 5:
+                return std::get<5>(s);
+                break;
+            case 6:
+                return std::get<6>(s);
+                break;
+            case 7:
+                return std::get<7>(s);
+                break;
+            case 8:
+                return std::get<8>(s);
+                break;
+            case 9:
+                return std::get<9>(s);
+                break;
+*/            }
+
+            throw std::runtime_error("concatenate::get index out of range");
+        }
+        auto get(size_t i) const
+        {
+            switch (i) {
+            case 0:
+                return std::get<0>(s);
+                break;
+/*            case 1:
+                return std::get<1>(s);
+                break;
+            case 2:
+                return std::get<2>(s);
+                break;
+            case 3:
+                return std::get<3>(s);
+                break;
+            case 4:
+                return std::get<4>(s);
+                break;
+            case 5:
+                return std::get<5>(s);
+                break;
+            case 6:
+                return std::get<6>(s);
+                break;
+            case 7:
+                return std::get<7>(s);
+                break;
+            case 8:
+                return std::get<8>(s);
+                break;
+            case 9:
+                return std::get<9>(s);
+                break;
+  */          }
+
+            throw std::runtime_error("concatenate::get index out of range");
+        }
+    };
 
     //
     // Functions
@@ -363,8 +479,8 @@ namespace fms::sequence {
     }
 
     // s[0] + x*(s[1] + x*(...))
-    template<class S>
-    inline typename S::value_type horner(S s, typename S::value_type x)
+    template<class S, class T = S::value_type>
+    inline T horner(S s, T x)
     {
         return !s ? 0 : *s + x * horner(++s, x);
     }

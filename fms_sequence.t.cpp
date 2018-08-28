@@ -1,9 +1,22 @@
 // fms_sequence.t.cpp - test sequences
 #include <cassert>
 #include <cmath>
+#include <chrono>
 #include "fms_sequence.h"
 
 using namespace fms;
+
+inline auto time(const std::function<void(void)>& f, size_t n = 1)
+{
+    std::chrono::time_point<std::chrono::steady_clock> tp;
+
+    tp = std::chrono::high_resolution_clock::now();
+    while (n--)
+        f();
+    std::chrono::duration<float> duration = std::chrono::high_resolution_clock::now() - tp;
+
+    return duration;
+}
 
 template<class T>
 void test_array()
@@ -103,6 +116,28 @@ void test_constant()
     assert(*five == 5);
 }
 
+void test_drop()
+{
+    int t[] = { 1,2,3 };
+    auto s = sequence::array(t);
+
+    {
+        assert(3 == length(s));
+        assert(2 == length(drop(1, s)));
+        auto s1 = drop(1, s);
+        assert(s1);
+        assert(*s1 == 2);
+        ++s1;
+        assert(s1);
+        assert(*s1 == 3);
+        ++s1;
+        assert(!s1);
+        ++s1;
+        assert(!s1);
+        assert(0 == length(drop(10, s)));
+    }
+}
+
 void test_iota()
 {
     {
@@ -186,6 +221,11 @@ void test_length()
     {
         assert(53 == length(sequence::epsilon(sequence::geometric<double>(1., .5))));
     }
+    {
+        int t[] = { 1,2,3 };
+        assert(3 == length(sequence::array(t)));
+        assert(2 == length(sequence::take(2, sequence::pointer(t))));
+    }
 }
 
 template<class T>
@@ -251,6 +291,10 @@ void test_binop()
         auto s0 = sequence::array(t0);
         auto s1 = sequence::array(t1);
         auto s = s0 + s1;
+        decltype(s) s2{ s };
+        assert(s2 == s);
+        assert(!(s2 != s));
+        s = s2;
         assert(s);
         assert(*s == *s0 + *s1);
         ++s;
@@ -332,7 +376,17 @@ void test_binop()
         auto s = epsilon(power(x) / factorial<>());
         assert (19 == length(s));
         assert(exp(x) - sum(s) == -2 * std::numeric_limits<double>::epsilon());
-        assert(exp(x) == sequence::horner(epsilon(constant<double>(1) / factorial<>()), x));
+        assert(exp(x) == sequence::horner(epsilon(constant(1) / factorial<>()), x));
+
+        auto duration = time([s]() { return sum(s); }, 10000);
+        duration = duration;
+        duration = time([x]() { return sequence::horner(epsilon(constant(1) / factorial<>()), x); }, 10000);
+        duration = duration;
+        auto h = epsilon(constant(1) / factorial<>());
+        duration = time([h,x]() { return sequence::horner(h, x); }, 10000);
+        duration = duration; 
+        duration = time([x]() { return exp(x); }, 10000);
+        duration = duration;
     }
 }
 
@@ -375,6 +429,7 @@ int main()
 
     test_iota();
 
+    test_drop();
     test_length();
     test_sum();
     test_product();

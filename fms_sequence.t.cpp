@@ -336,6 +336,25 @@ void test_binop()
     }
 }
 
+template<class T>
+void test_concatenate()
+{
+    {
+        using sequence::concatenate;
+        using sequence::array;
+
+        T a[] = { 1,2 };
+        T b[] = { 3,4,5 };
+        auto c = concatenate(array(a), array(b));
+        assert(c);
+        assert(*c == 1);
+        ++c;
+        assert(c);
+        assert(*c == 2);
+
+    }
+}
+
 int main()
 {
     test_array<int>();
@@ -362,6 +381,8 @@ int main()
     test_factorial<int>();
 
     test_binop();
+
+    test_concatenate<int>();
 
     return 0;
 }

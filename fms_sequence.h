@@ -2,6 +2,7 @@
 #pragma once
 #include <array>
 #include <functional>
+#include <tuple>
 #include <typeinfo>
 #include <type_traits>
 
@@ -11,9 +12,8 @@ namespace fms::sequence {
     template <class T>
     class pointer {
         T* t;
-
     public:
-	using value_type = T;
+	    using value_type = T;
         pointer(T* t = nullptr) noexcept
             : t{ t }
         { }
@@ -42,16 +42,17 @@ namespace fms::sequence {
         }
     };
 
+    // limit sequence to size n
     template<class S>
     class take {
         size_t n;
         S s;
     public:
-        typedef typename S::value_type value_type;
+        using value_type = typename S::value_type;
         take(size_t n, S s)
             : n{ n }, s{ s }
         { }
-        // same sequence and size
+        // same sequence pointer and size
         bool operator==(const take& s) const
         {
             return this->n == s.n && this->s == s.s;
@@ -98,9 +99,8 @@ namespace fms::sequence {
     template <class T = double>
     class constant {
         T t;
-
     public:
-        typedef T value_type;
+        using value_type = T;
         constant(T t = 0) noexcept
             : t(t)
         {
@@ -131,9 +131,8 @@ namespace fms::sequence {
     template <class S = double>
     class epsilon {
         S s;
-
     public:
-        typedef typename S::value_type value_type;
+        using value_type = typename S::value_type;
         epsilon(S s)
             : s{ s }
         { }
@@ -168,7 +167,7 @@ namespace fms::sequence {
     class factorial {
         T n_, n;
     public:
-        typedef T value_type;
+        using value_type = T;
         factorial() noexcept
             : n_{ 1 }, n{ 0 }
         { }
@@ -201,26 +200,33 @@ namespace fms::sequence {
     class generate {
         T t0, dt;
         Op op;
-
     public:
-        typedef T value_type;
+        using value_type = T;
         generate(T t0, T dt = 1) noexcept
             : t0(t0), dt(dt), op(Op{})
-        {
-        }
+        { }
         bool operator==(const generate& s)
         {
             return t0 == s.t0 && dt == s.dt && typeid(op) == typeid(s.op);
         }
-        bool operator!=(const generate& s) const { return !operator==(s); }
-        operator bool() const { return false; }
+        bool operator!=(const generate& s) const
+        {
+            return !operator==(s);
+        }
+        operator bool() const 
+        { 
+            return false;
+        }
         generate& operator++()
         {
             t0 = op(t0, dt);
 
             return *this;
         }
-        value_type operator*() const { return t0; }
+        value_type operator*() const 
+        { 
+            return t0; 
+        }
     };
     template<class T>
     using linear = generate<T, std::plus<T>>;
@@ -231,7 +237,6 @@ namespace fms::sequence {
     template <class T>
     class null {
         T* t;
-
     public:
         typedef T value_type;
         null(T* t = nullptr) noexcept
@@ -258,7 +263,7 @@ namespace fms::sequence {
 
             return *this;
         }
-        value_type operator*() const 
+        value_type operator*() const
         {
             return *t;
         }
@@ -296,7 +301,7 @@ namespace fms::sequence {
             return tn;
         }
     };
-    
+
     template<class Op, class S0, class S1>
     class binop {
         Op op;
@@ -332,7 +337,52 @@ namespace fms::sequence {
             return op(*s0, *s1);
         }
     };
-    
+
+    template<class ...S>
+    class concatenate {
+        std::tuple<S...> s;
+        size_t i; // index of active sequence
+    public:
+        typedef std::common_type_t<typename S::value_type...> value_type;
+        concatenate(S... s)
+            : s(s), i(0)
+        { }
+        bool operator==(const concatenate& s) const
+        {
+            if (this->s.size() != s.size() || this->i != s.i) {
+                return false;
+            }
+
+            for (size_t j = 0; j < this->s.size(); ++i) {
+                if (std::get<j>(this->s) != std::get<j>(s.s)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+        bool operator!=(const concatenate& s) const
+        {
+            return !operator==(s);
+        }
+        operator bool() const
+        {
+            return i != s.size();
+        }
+        concatenate& operator++()
+        {
+            ++std::get<i>(s);
+            if (!std::get<i>(s)) {
+                ++i;
+            }
+
+            return *this;
+        }
+        value_type operator*() const
+        {
+            return 0;// *(std::get<i>(s));
+        }
+    };
 
     //
     // Functions
@@ -357,6 +407,11 @@ namespace fms::sequence {
     inline auto operator/(S0 s0, S1 s1)
     {
         return binop(std::divides<std::common_type_t<typename S0::value_type, typename S1::value_type>>{}, s0, s1);
+    }
+    template<class S0, class S1>
+    inline auto operator%(S0 s0, S1 s1)
+    {
+        return binop(std::modulus<std::common_type_t<typename S0::value_type, typename S1::value_type>>{}, s0, s1);
     }
 
     // s[0] + x*(s[1] + x*(...))

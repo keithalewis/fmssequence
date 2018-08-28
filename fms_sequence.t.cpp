@@ -371,19 +371,20 @@ void test_binop()
         using sequence::epsilon;
         using sequence::length;
         using sequence::constant;
+        using sequence::horner;
 
         double x = 1;
         auto s = epsilon(power(x) / factorial<>());
         assert (19 == length(s));
         assert(exp(x) - sum(s) == -2 * std::numeric_limits<double>::epsilon());
-        assert(exp(x) == sequence::horner(epsilon(constant(1) / factorial<>()), x));
+        assert(exp(x) == horner(epsilon(constant(1) / factorial<>()), x));
 
         auto duration = time([s]() { return sum(s); }, 10000);
         duration = duration;
-        duration = time([x]() { return sequence::horner(epsilon(constant(1) / factorial<>()), x); }, 10000);
+        duration = time([x]() { return horner(epsilon(constant(1) / factorial<>()), x); }, 10000);
         duration = duration;
         auto h = epsilon(constant(1) / factorial<>());
-        duration = time([h,x]() { return sequence::horner(h, x); }, 10000);
+        duration = time([h,x]() { return horner(h, x); }, 10000);
         duration = duration; 
         duration = time([x]() { return exp(x); }, 10000);
         duration = duration;
